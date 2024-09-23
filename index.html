@@ -231,11 +231,40 @@ const handleJump = () => {
     if (!isGameOver && jumpAllowed) {
         fura.velocity = fura.lift;  // ふら。がジャンプ
         jumpAllowed = false;  // ジャンプを一時的に無効にする
+
+        if (bgm.paused) {
+            bgm.play();  // BGMを再生（初回ジャンプ時）
+        }
     } else if (isGameOver) {
-        resetGame();  // ゲームオーバー時にタップするとリセット
+        resetGame();  // ゲームオーバー時にリセット
         gameInterval = setInterval(createPipes, 3000);  // 障害物生成を再開
+        gameLoop();  // ゲームループを再開
     }
 };
+
+        document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+        if (!isGameOver && jumpAllowed) {
+            fura.velocity = fura.lift;  // ふら。がジャンプ
+            jumpAllowed = false;  // ジャンプを一時的に無効にする
+            
+            if (bgm.paused) {
+                bgm.play();  // 初回ジャンプでBGM再生
+            }
+        } else if (isGameOver) {
+            resetGame();  // ゲームオーバー時にリセット
+            gameInterval = setInterval(createPipes, 3000);  // 障害物生成を再開
+        }
+    }
+});
+
+document.addEventListener("keyup", (e) => {
+    if (e.code === "Space") {
+        jumpAllowed = true;  // スペースキーを離したらジャンプ許可をリセット
+    }
+});
+
+        
 
 // タップ、クリック、またはタッチ開始時にジャンプさせるイベント
 canvas.addEventListener("click", handleJump);
