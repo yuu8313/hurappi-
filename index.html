@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <link rel="icon" href="https://raw.githubusercontent.com/yuu8313/hurappi-/refs/heads/main/images/a/fabikon.png" type="image/png">
+    <meta charset="UTF-8">
+    <audio id="bgm" src="audio/bgm.mp3" loop></audio>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ふらッピー ゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #70c5ce;
+        }
+        canvas {
+            display: block;
+            background: url('images/background.png') no-repeat center center;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        // キャンバスの設定
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // ウィンドウサイズに応じたキャンバスのサイズ調整
+        const resizeCanvas = () => {
+            canvas.width = window.innerWidth > 480 ? 320 : window.innerWidth;  // 最大幅を320pxに制限
+            canvas.height = window.innerHeight > 720 ? 480 : window.innerHeight;  // 最大高さを480pxに制限
+        };
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);  // ウィンドウリサイズ時のイベントリスナー
+
+        // 画像のロード
+        const images = {};
+        let imagesLoaded = 0;  // 読み込まれた画像の数
+        const loadImages = () => {
+            const imageFiles = ['background', 'hura_1', 'hura_2', 'hura_3', 'down_bar', 'up_bar'];
+            imageFiles.forEach(img => {
+                images[img] = new Image();
+                images[img].src = `images/${img}.png`;
+                images[img].onload = () => {
+                    imagesLoaded++;
+                    if (imagesLoaded === imageFiles.length) {
+                        startGame();  // すべての画像が読み込まれたらゲームを開始
+                    }
+                };
+            });
+        };
+
+        loadImages();  // 画像をロード
+
+        // ふら。の設定
+        let fura = { x: 50, y: 150, width: 42, height: 38, gravity: 0.25, velocity: 0, lift: -5, frame: 0 };
+        let pipes = [];  // 障害物リスト
+        let pipeWidth = 50;  // 障害物の幅
+        let pipeGap = 120;  // 上下の障害物の間隔
+        let pipeSpeed = 2;  // 障害物の移動速度
+        let score = 0;  // スコア
+        let isGameOver = false;  // ゲームオーバーのフラグ
+        let bgmStarted = false;  // BGMが再生されているかのフラグ
+
+        // 障害物生成
+        const createPipes = () => {
+            // 最後の障害物から十分に遠い場合、新しい障害物を生成
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+                let pipeHeight = Math.floor(Math.random() * (canvas.height / 2)) + 50;
+                pipes.push({ x: canvas.width, y: pipeHeight, width: pipeWidth, height: pipeHeight });
+            }
+        };
+
+        // ゲームの初期化
+        const resetGame = () => {
+            fura.y = 150;  // ふら。の初期Y座標
+            fura.velocity = 0;  // ふら。の速度をリセット
+            pipes = [];  // 障害物リストをクリア
+            score = 0;  // スコアをリセット
+            isGameOver = false;  // ゲームオーバー状態をリセット
+            createPipes();  // 最初の障害物を生成
+        };
+
+        // 背景の描画
+        const drawBackground = () => {
+            ctx.drawImage(images['background'], 0, 0, canvas.width, canvas.height);  // 背景を描画
+        };
+
+        // ふら。の描画
+        const drawFura = () => {
+            let birdImage = images[`hura_${Math.floor(fura.frame / 10) % 3 + 1}`];  // アニメーションのフレームを取得
+            ctx.drawImage(birdImage, fura.x, fura.y, fura.width, fura.height);  // ふら。を描画
+        };
+
+        // 障害物の描画
+        const drawPipes = () => {
+            pipes.forEach(pipe => {
+                // 上向き障害物
+                ctx.drawImage(images['up_bar'], pipe.x, pipe.y - pipeGap - pipe.height, pipe.width, pipe.height);
+                // 下向き障害物
+                ctx.drawImage(images['down_bar'], pipe.x, pipe.y, pipe.width, canvas.height - pipe.y);
+            });
+        };
+
+        // スコア表示
+        const drawScore = () => {
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "#fff";
+            ctx.fillText("Score: " + score, 10, 30);  // スコアを表示
+        };
+
+        // ゲームオーバー処理
+        const gameOver = () => {
+            isGameOver = true;  // ゲームオーバーフラグを設定
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // キャンバスをクリア
+            drawBackground();  // 背景を描画
+            ctx.fillStyle = "#ff0000";  // ゲームオーバーのメッセージ色
+            ctx.font = "30px Arial";
+            ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 10);  // メッセージを描画
+            ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 30);  // スコアを表示
+        };
+
+        // ゲームの更新処理
+        const updateGame = () => {
+            if (isGameOver) return;  // ゲームオーバーの場合は処理を中断
+
+            fura.velocity += fura.gravity;  // 重力を適用
+            fura.y += fura.velocity;  // Y座標を更新
+
+            // ふら。が画面の下に出ないように制限
+            if (fura.y + fura.height >= canvas.height) {
+                fura.y = canvas.height - fura.height;
+                gameOver();  // ゲームオーバー処理
+                return;
+            }
+            // ふら。が画面の上に出ないように制限
+            if (fura.y <= 0) {
+                fura.y = 0;
+                fura.velocity = 0;  // 速度をゼロにする
+            }
+
+            // 障害物の移動と当たり判定
+            pipes.forEach(pipe => {
+                pipe.x -= pipeSpeed;  // 障害物を左に移動
+
+                // ふら。が障害物に衝突したか判定
+                if (
+                    fura.x < pipe.x + pipe.width &&
+                    fura.x + fura.width > pipe.x &&
+                    (fura.y < pipe.y - pipeGap || fura.y + fura.height > pipe.y)
+                ) {
+                    gameOver();  // 障害物に当たったらゲームオーバー処理
+                    return;
+                }
+            });
+
+            // 画面外の障害物を削除し、スコアを加算
+            if (pipes.length && pipes[0].x + pipeWidth < 0) {
+                pipes.shift();  // 古い障害物を削除
+                score++;  // スコアを1追加
+                createPipes();  // 新しい障害物を生成
+            }
+
+            // 描画クリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景を描画
+            drawBackground();
+
+            // 障害物を描画
+            drawPipes();
+
+            // ふら。を描画
+            drawFura();
+
+            // スコアを描画
+            drawScore();
+        };
+
+        // ゲームのメインループ
+        const gameLoop = () => {
+            updateGame();  // ゲームを更新
+            requestAnimationFrame(gameLoop);  // 次のフレームをリクエスト
+        };
+
+        // ジャンプ処理
+        const handleJump = () => {
+            if (!isGameOver) {
+                fura.velocity = fura.lift;  // ふら。を上に跳ねさせる
+                if (!bgmStarted) {  // 初めてのジャンプでBGMを開始
+                    document.getElementById("bgm").play();  // BGMを再生
+                    bgmStarted = true;  // BGM再生フラグを設定
+                }
+            } else {
+                resetGame();  // ゲームオーバーの場合はリセット
+            }
+        };
+
+        // キー押下イベントリスナー
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                handleJump();  // スペースキーが押されたときの処理
+            }
+        });
+
+        // クリックイベントリスナー
+        canvas.addEventListener("click", handleJump);  // クリックでジャンプ
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();  // タッチのデフォルト動作を無効化
+            handleJump();  // タッチでジャンプ
+        });
+
+        // ゲーム開始処理
+        const startGame = () => {
+            resetGame();  // ゲームをリセット
+            gameLoop();  // ゲームループを開始
+        };
+    </script>
+</body>
+</html>
