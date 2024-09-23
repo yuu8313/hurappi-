@@ -226,22 +226,35 @@
         };
 
         // スペースキーを押すとふら。がジャンプ
-        document.addEventListener("keydown", (e) => {
-            if (e.code === "Space" && !isGameOver && jumpAllowed) {
-                fura.velocity = fura.lift;  // ふら。がジャンプ
-                jumpAllowed = false;  // ジャンプを一時的に無効にする
-            } else if (isGameOver && e.code === "Space") {
-                resetGame();  // ゲームオーバー時にスペースを押すとリセット
-                gameInterval = setInterval(createPipes, 3000);  // 障害物生成を再開
-            }
-        });
+// タップやクリックでもジャンプできるようにする
+const handleJump = () => {
+    if (!isGameOver && jumpAllowed) {
+        fura.velocity = fura.lift;  // ふら。がジャンプ
+        jumpAllowed = false;  // ジャンプを一時的に無効にする
+    } else if (isGameOver) {
+        resetGame();  // ゲームオーバー時にタップするとリセット
+        gameInterval = setInterval(createPipes, 3000);  // 障害物生成を再開
+    }
+};
 
-        // スペースキーを離すと再度ジャンプ可能にする
-        document.addEventListener("keyup", (e) => {
-            if (e.code === "Space") {
-                jumpAllowed = true;  // ジャンプを再び許可
-            }
-        });
+// タップ、クリック、またはタッチ開始時にジャンプさせるイベント
+canvas.addEventListener("click", handleJump);
+canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault();  // タッチ操作によるスクロールなどを防ぐ
+    handleJump();
+});
+
+
+// タップやクリック、キーを離した際にジャンプを再度許可
+document.addEventListener("keyup", (e) => {
+    if (e.code === "Space") {
+        jumpAllowed = true;  // ジャンプを再び許可
+    }
+});
+canvas.addEventListener("touchend", () => {
+    jumpAllowed = true;  // タッチ終了時にジャンプを再び許可
+});
+
 
         // ゲーム開始
         const startGame = () => {
