@@ -3,6 +3,7 @@
 <head>
 　  <link rel="icon" href="https://raw.githubusercontent.com/yuu8313/hurappi-/refs/heads/main/images/a/fabikon.png" type="image/png">
     <meta charset="UTF-8">
+    <audio id="bgm" src="audio/bgm.mp3" loop></audio>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ふらッピー ゲーム </title>
     <style>
@@ -36,6 +37,7 @@
         };
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+        const bgm = document.getElementById("bgm");// BGMをロード
 
         // 画像のロード
         const images = {};
@@ -107,6 +109,8 @@
             isGameOver = false;  // ゲームオーバー状態をリセット
             jumpAllowed = true;  // ジャンプを許可
             createPipes();  // 最初の障害物を生成
+            bgm.currentTime = 0;  // BGMを最初から再生
+            bgm.play();  // BGMを再生
         };
 
         // 背景の描画
