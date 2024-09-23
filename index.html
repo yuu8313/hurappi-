@@ -148,6 +148,10 @@
             clearInterval(gameInterval);  // 障害物生成のインターバルをクリア
             ctx.clearRect(0, 0, canvas.width, canvas.height);  // キャンバスをクリア
             drawBackground();  // 背景を描画してからメッセージ表示
+            const audio = document.querySelector('audio'); // BGMを止める
+            audio.pause();
+            audio.currentTime = 0;
+            audio.currentTime = 0;
             ctx.font = "30px Arial";
             ctx.fillStyle = "#ff0000";  // 赤色のテキスト
             ctx.textAlign = "center";
