@@ -143,21 +143,53 @@
         };
 
         // ゲームオーバー画面
-        const gameOver = () => {
-            isGameOver = true;  // ゲームオーバーのフラグをセット
-            clearInterval(gameInterval);  // 障害物生成のインターバルをクリア
-            ctx.clearRect(0, 0, canvas.width, canvas.height);  // キャンバスをクリア
-            drawBackground();  // 背景を描画してからメッセージ表示
-            const audio = document.querySelector('audio'); // BGMを止める
-            audio.pause();
-            audio.currentTime = 0;
-            audio.currentTime = 0;
-            ctx.font = "30px Arial";
-            ctx.fillStyle = "#ff0000";  // 赤色のテキスト
-            ctx.textAlign = "center";
-            ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 10);  // ゲームオーバーのメッセージ
-            ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 30);  // スコアの表示
-        };
+const gameOver = () => {
+    isGameOver = true;  // ゲームオーバーのフラグをセット
+    clearInterval(gameInterval);  // 障害物生成のインターバルをクリア
+    ctx.clearRect(0, 0, canvas.width, canvas.height);  // キャンバスをクリア
+    drawBackground();  // 背景を描画してからメッセージ表示
+    const audio = document.querySelector('audio'); // BGMを止める
+    audio.pause();
+    audio.currentTime = 0;
+    ctx.font = "30px Arial";
+    ctx.fillStyle = "#ff0000";  // 赤色のテキスト
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 10);  // ゲームオーバーのメッセージ
+    ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 30);  // スコアの表示
+
+    // リスタート用のイベントリスナーを追加
+    canvas.addEventListener('click', restartGame);
+    document.addEventListener('keydown', function(event) {
+        if (event.code === 'Space') {
+            restartGame();
+        }
+    });
+};
+
+const restartGame = () => {
+    if (isGameOver) {
+        // ゲームの状態をリセット
+        isGameOver = false;
+        score = 0;
+        bird.y = canvas.height / 2;
+        bird.velocity = 0;
+        pipes = [];
+
+        // イベントリスナーを削除
+        canvas.removeEventListener('click', restartGame);
+        document.removeEventListener('keydown', restartGame);
+
+        // ゲームループを再開
+        gameInterval = setInterval(() => {
+            update();
+            draw();
+        }, 20);
+
+        // BGMを再生
+        const audio = document.querySelector('audio');
+        audio.play();
+    }
+};
 
         // 障害物に当たった際の処理
         const onCollision = () => {
